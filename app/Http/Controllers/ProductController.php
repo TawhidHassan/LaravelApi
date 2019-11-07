@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ProductNotBelongsToUser;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\Product\ProductCollection;
 use App\Http\Resources\Product\ProductResource;
 use App\Model\Product;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -78,13 +80,14 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Model\Product  $product
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\Model\Product $product
      * @return \Illuminate\Http\Response
+     * @throws ProductNotBelongsToUser
      */
     public function update(Request $request, Product $product)
     {
-//        $this->ProductUserCheck($product);
+        $this->ProductUserCheck($product);
         $request['detail'] = $request->description;
         unset($request['description']);
         $product->update($request->all());
@@ -93,16 +96,24 @@ class ProductController extends Controller
         ],Response::HTTP_CREATED);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Model\Product  $product
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy(Product $product)
     {
-//        $this->ProductUserCheck($product);
+        $this->ProductUserCheck($product);
         $product->delete();
         return response(null,Response::HTTP_NO_CONTENT);
     }
+
+    /**
+     * @param $product
+     * @throws ProductNotBelongsToUser
+     */
+    public function ProductUserCheck($product)
+    {
+        $id = Auth::id();
+        if (5!== $product->user_id) {
+            throw new ProductNotBelongsToUser;
+        }
+    }
+
 }
